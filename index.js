@@ -61,6 +61,15 @@ async function run() {
       res.send(result);
     });
 
+    // 4. GET - Single Job Details
+    
+    app.get("/allJobs/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const job = await allJobsCollection.findOne(query);
+      res.send(job);
+    });
+
     // ✅ Server listen
     app.listen(port, () => {
       console.log(`🚀 Server running on port ${port}`);
