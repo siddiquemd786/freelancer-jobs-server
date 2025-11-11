@@ -26,6 +26,7 @@ async function run() {
 
     const db = client.db("freelancerMarketPlaces");
     const allJobsCollection = db.collection("AllJobs");
+    const acceptedTasksCollection = db.collection("AcceptedTasks");
 
     console.log("✅ MongoDB Connected Successfully");
 
@@ -62,13 +63,56 @@ async function run() {
     });
 
     // 4. GET - Single Job Details
-    
+
     app.get("/allJobs/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const job = await allJobsCollection.findOne(query);
       res.send(job);
     });
+
+    // 🔹 POST: Accept a Job
+app.post("/acceptJob", async (req, res) => {
+  const { jobId, userEmail } = req.body;
+
+  if (!jobId || !userEmail) {
+    return res.status(400).send({ message: "Missing jobId or userEmail" });
+  }
+
+  const job = await allJobsCollection.findOne({ _id: new ObjectId(jobId) });
+  if (!job) return res.status(404).send({ message: "Job not found" });
+
+  const existing = await acceptedTasksCollection.findOne({
+    jobId,
+    userEmail,
+  });
+
+  if (existing)
+    return res.status(400).send({ message: "Already accepted this job" });
+
+  const accepted = {
+    ...job,
+    jobId,
+    acceptedBy: userEmail,
+    acceptedDate: new Date(),
+  };
+
+  const result = await acceptedTasksCollection.insertOne(accepted);
+  res.send(result);
+});
+
+// 🔹 GET: My Accepted Tasks
+app.get("/myAcceptedTasks", async (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).send({ message: "Missing email" });
+
+  const tasks = await acceptedTasksCollection
+    .find({ acceptedBy: email })
+    .sort({ _id: -1 })
+    .toArray();
+
+  res.send(tasks);
+});
 
     // ✅ Server listen
     app.listen(port, () => {
