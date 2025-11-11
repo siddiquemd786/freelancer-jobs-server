@@ -135,6 +135,82 @@ async function run() {
       res.send(tasks);
     });
 
+    // PUT - Update job
+app.put("/alljobs/:id", async (req, res) => {
+  const id = req.params.id;
+  const updatedData = req.body;
+
+  try {
+    const result = await allJobsCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updatedData }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).send({ message: "Job not found" });
+    }
+
+    res.send({ message: "Job updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(400).send({ message: "Invalid job ID" });
+  }
+});
+
+// DELETE an accepted task
+app.delete("/acceptedTasks/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await acceptedTasksCollection.deleteOne({ _id: new ObjectId(id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).send({ message: "Task not found" });
+    }
+    res.send({ message: "Accepted task removed successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(400).send({ message: "Invalid task ID" });
+  }
+});
+
+// POST a new accepted task
+app.post("/acceptedTasks", async (req, res) => {
+  try {
+    const { jobId, acceptedBy, title, category, summary, coverImage, postedBy } = req.body;
+
+    if (!jobId || !acceptedBy) {
+      return res.status(400).json({ message: "Missing jobId or acceptedBy" });
+    }
+
+    // Prevent duplicate acceptance
+    const existing = await acceptedTasksCollection.findOne({ jobId, acceptedBy });
+    if (existing) {
+      return res.status(400).json({ message: "You have already accepted this job" });
+    }
+
+    const acceptedTask = {
+      jobId,
+      acceptedBy,
+      title,
+      category,
+      summary,
+      coverImage,
+      postedBy,
+      acceptedAt: new Date(),
+    };
+
+    const result = await acceptedTasksCollection.insertOne(acceptedTask);
+    res.status(201).json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+
+
+
+
     // -------------------------------
     // Start server
     // -------------------------------
