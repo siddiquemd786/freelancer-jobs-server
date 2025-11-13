@@ -246,10 +246,15 @@ app.post("/acceptedTasks", async (req, res) => {
 
    
   
- 
-    app.listen(port, () => {
-      console.log(`🚀 Server running on port ${port}`);
-    });
+ // ✅ Root route for browser testing
+app.get("/", (req, res) => {
+  res.send("✅ Freelancer Jobs Server is running successfully!");
+});
+
+app.listen(port, () => {
+  console.log(`🚀 Server running on port ${port}`);
+});
+
   } catch (err) {
     console.error("❌ Database connection error:", err);
   }
