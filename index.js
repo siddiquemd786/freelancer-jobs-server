@@ -1,3 +1,6 @@
+// index.js
+
+require('dotenv').config();
 const express = require("express");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
@@ -5,13 +8,15 @@ const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware
+
 app.use(cors());
 app.use(express.json());
 
-// MongoDB URI
-const uri =
-  "mongodb+srv://smartdbuser:QGxNfsnhSmFSOdim@cluster0.wejbxsr.mongodb.net/?appName=Cluster0";
+
+
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.wejbxsr.mongodb.net/?appName=Cluster0`;
+
+console.log(uri); 
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -26,22 +31,19 @@ async function run() {
     await client.connect();
     console.log("✅ MongoDB Connected Successfully");
 
-    // Database & Collections
+  
     const db = client.db("freelancerMarketPlaces");
     const allJobsCollection = db.collection("AllJobs");
     const acceptedTasksCollection = db.collection("AcceptedTasks");
 
-    // -------------------------------
-    // 1️⃣ GET: All Jobs
-    // -------------------------------
+
     app.get("/alljobs", async (req, res) => {
       const jobs = await allJobsCollection.find().sort({ _id: -1 }).toArray();
       res.send(jobs);
     });
 
-    // -------------------------------
-    // 2️⃣ GET: Latest Jobs (optional limit)
-    // -------------------------------
+ 
+
     app.get("/jobs", async (req, res) => {
       const limit = parseInt(req.query.limit) || 6;
       const jobs = await allJobsCollection
@@ -52,9 +54,7 @@ async function run() {
       res.send(jobs);
     });
 
-    // -------------------------------
-    // 3️⃣ POST: Add New Job
-    // -------------------------------
+
     app.post("/alljobs", async (req, res) => {
       const newJob = req.body;
 
@@ -120,7 +120,7 @@ async function run() {
       res.send(result);
     });
 
-    // -------------------------------
+ 
     // 6️⃣ GET: My Accepted Tasks
     // -------------------------------
     app.get("/myAcceptedTasks", async (req, res) => {
@@ -135,7 +135,7 @@ async function run() {
       res.send(tasks);
     });
 
-    // PUT - Update job
+
 app.put("/alljobs/:id", async (req, res) => {
   const id = req.params.id;
   const updatedData = req.body;
@@ -157,7 +157,7 @@ app.put("/alljobs/:id", async (req, res) => {
   }
 });
 
-// DELETE an accepted task
+
 app.delete("/acceptedTasks/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -173,7 +173,40 @@ app.delete("/acceptedTasks/:id", async (req, res) => {
   }
 });
 
-// POST a new accepted task
+app.post("/addJob", async (req, res) => {
+  const newJob = req.body;
+
+
+  newJob.postedAt = newJob.postedAt || new Date().toISOString();
+
+  try {
+    const result = await jobCollection.insertOne(newJob);
+    res.send(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "Error adding job" });
+  }
+});
+
+
+app.delete("/alljobs/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await allJobsCollection.deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).send({ message: "Job not found" });
+    }
+
+    res.send({ message: "Job deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(400).send({ message: "Invalid job ID" });
+  }
+});
+
+
 app.post("/acceptedTasks", async (req, res) => {
   try {
     const { jobId, acceptedBy, title, category, summary, coverImage, postedBy } = req.body;
@@ -211,9 +244,9 @@ app.post("/acceptedTasks", async (req, res) => {
 
 
 
-    // -------------------------------
-    // Start server
-    // -------------------------------
+   
+  
+ 
     app.listen(port, () => {
       console.log(`🚀 Server running on port ${port}`);
     });
@@ -223,3 +256,5 @@ app.post("/acceptedTasks", async (req, res) => {
 }
 
 run().catch(console.dir);
+
+
